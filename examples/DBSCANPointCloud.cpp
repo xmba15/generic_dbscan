@@ -20,20 +20,39 @@ using PointCloudType = pcl::PointXYZ;
 using PointCloud = pcl::PointCloud<PointCloudType>;
 using PointCloudPtr = PointCloud::Ptr;
 
-class CustomPoint3D : public std::array<double, 3>
+template <typename POINT_CLOUD_TYPE> double at(const POINT_CLOUD_TYPE& p, const int axis)
 {
- public:
-    CustomPoint3D(const double x, const double y, const double z)
-    {
-        (*this)[0] = x;
-        (*this)[1] = y;
-        (*this)[2] = y;
+    switch (axis) {
+        case 0: {
+            return p.x;
+            break;
+        }
+        case 1: {
+            return p.y;
+            break;
+        }
+        case 2: {
+            return p.z;
+            break;
+        }
+        default: {
+            throw std::runtime_error("axis out of range\n");
+        }
     }
-};
+}
 
-using DBSCAN = clustering::DBSCAN<3, CustomPoint3D>;
+template <typename POINT_CLOUD_TYPE>
+double
+distance(const POINT_CLOUD_TYPE& p1, const POINT_CLOUD_TYPE& p2,
+         const std::function<double(const POINT_CLOUD_TYPE& p, const int axis)>& valueAtFunc = ::at<POINT_CLOUD_TYPE>)
+{
+    double result = 0.0;
+    for (int i = 0; i < 3; ++i) {
+        result += std::pow(valueAtFunc(p1, i) - valueAtFunc(p2, i), 2);
+    }
+    return std::sqrt(result);
+}
 
-DBSCAN::VecPointType toVecPointType(const PointCloudPtr& inPcl);
 pcl::PointIndices::Ptr toPclPointIndices(const std::vector<int>& indices);
 std::vector<PointCloudPtr> toClusters(const std::vector<std::vector<int>>& clusterIndices, const PointCloudPtr& inPcl);
 
@@ -63,9 +82,9 @@ int main(int argc, char* argv[])
         return EXIT_FAILURE;
     }
 
-    DBSCAN::Ptr dbscan = std::make_shared<DBSCAN>(eps, minPoints);
-    DBSCAN::VecPointType customPoints = ::toVecPointType(inputPcl);
-    std::vector<std::vector<int>> clusterIndices = dbscan->estimateClusterIndices(customPoints);
+    using DBSCAN = clustering::DBSCAN<3, PointCloudType, decltype(inputPcl->points)>;
+    DBSCAN::Ptr dbscan = std::make_shared<DBSCAN>(eps, minPoints, ::distance<PointCloudType>, ::at<PointCloudType>);
+    std::vector<std::vector<int>> clusterIndices = dbscan->estimateClusterIndices(inputPcl->points);
     std::vector<PointCloudPtr> clusters = ::toClusters(clusterIndices, inputPcl);
 
     auto [colors, colorHandlers] = ::initPclColorHandlers<PointCloudType>(clusters);
@@ -88,18 +107,6 @@ int main(int argc, char* argv[])
 
 namespace
 {
-DBSCAN::VecPointType toVecPointType(const PointCloudPtr& inPcl)
-{
-    DBSCAN::VecPointType customPoints;
-    customPoints.reserve(inPcl->points.size());
-
-    for (const auto& point : inPcl->points) {
-        customPoints.emplace_back(DBSCAN::PointType(point.x, point.y, point.z));
-    }
-
-    return customPoints;
-}
-
 pcl::PointIndices::Ptr toPclPointIndices(const std::vector<int>& indices)
 {
     pcl::PointIndices::Ptr pclIndices(new pcl::PointIndices);

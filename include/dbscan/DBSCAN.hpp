@@ -27,12 +27,16 @@ template <int POINT_DIMENSION, typename POINT_TYPE, typename VEC_POINT_TYPE = st
 
     using Ptr = std::shared_ptr<DBSCAN>;
 
+    using ValueAtFunctionType = const std::function<double(const POINT_TYPE& p, const int axis)>;
+    using DistanceFunctionType = std::function<double(const PointType& p1, const PointType& p2, ValueAtFunctionType)>;
+
  public:
-    DBSCAN(const std::function<double(const PointType& p1, const PointType& p2)>& distFunc =
-               clustering::distance<POINT_DIMENSION, POINT_TYPE>);
+    explicit DBSCAN(const DistanceFunctionType& distFunc = clustering::distance<POINT_DIMENSION, POINT_TYPE>,
+                    const ValueAtFunctionType& valueAtFunc = clustering::at<POINT_DIMENSION, POINT_TYPE>);
     DBSCAN(const double eps, const int minPoints,
-           const std::function<double(const PointType& p1, const PointType& p2)>& distFunc =
-               clustering::distance<POINT_DIMENSION, POINT_TYPE>);
+           const DistanceFunctionType& distFunc = clustering::distance<POINT_DIMENSION, POINT_TYPE>,
+           const ValueAtFunctionType& valueAtFunc = clustering::at<POINT_DIMENSION, POINT_TYPE>);
+
     ~DBSCAN();
 
     void setMinPoints(const int minPoints);
@@ -46,7 +50,8 @@ template <int POINT_DIMENSION, typename POINT_TYPE, typename VEC_POINT_TYPE = st
                        std::vector<char>& visited, std::vector<char>& isNoise) const;
 
  public:
-    const std::function<double(const PointType& p1, const PointType& p2)> m_distFunc;
+    const ValueAtFunctionType m_valueAtFunc;
+    const DistanceFunctionType m_distFunc;
 
  protected:
     double m_eps;
@@ -55,5 +60,4 @@ template <int POINT_DIMENSION, typename POINT_TYPE, typename VEC_POINT_TYPE = st
     typename KDTree<POINT_DIMENSION, POINT_TYPE, VEC_POINT_TYPE>::Ptr m_kdtree;
 };
 }  // namespace clustering
-
 #include "impl/DBSCANImpl.ipp"

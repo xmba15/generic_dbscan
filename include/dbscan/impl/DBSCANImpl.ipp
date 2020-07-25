@@ -10,9 +10,10 @@
 namespace clustering
 {
 template <int POINT_DIMENSION, typename POINT_TYPE, typename VEC_POINT_TYPE>
-DBSCAN<POINT_DIMENSION, POINT_TYPE, VEC_POINT_TYPE>::DBSCAN(
-    const std::function<double(const PointType& p1, const PointType& p2)>& distFunc)
-    : m_distFunc(distFunc)
+DBSCAN<POINT_DIMENSION, POINT_TYPE, VEC_POINT_TYPE>::DBSCAN(const DistanceFunctionType& distFunc,
+                                                            const ValueAtFunctionType& valueAtFunc)
+    : m_valueAtFunc(valueAtFunc)
+    , m_distFunc(distFunc)
     , m_eps(0)
     , m_minPoints(0)
     , m_kdtree(nullptr)
@@ -20,10 +21,11 @@ DBSCAN<POINT_DIMENSION, POINT_TYPE, VEC_POINT_TYPE>::DBSCAN(
 }
 
 template <int POINT_DIMENSION, typename POINT_TYPE, typename VEC_POINT_TYPE>
-DBSCAN<POINT_DIMENSION, POINT_TYPE, VEC_POINT_TYPE>::DBSCAN(
-    const double eps, const int minPoints,
-    const std::function<double(const PointType& p1, const PointType& p2)>& distFunc)
-    : m_distFunc(distFunc)
+DBSCAN<POINT_DIMENSION, POINT_TYPE, VEC_POINT_TYPE>::DBSCAN(const double eps, const int minPoints,
+                                                            const DistanceFunctionType& distFunc,
+                                                            const ValueAtFunctionType& valueAtFunc)
+    : m_valueAtFunc(valueAtFunc)
+    , m_distFunc(distFunc)
     , m_eps(eps)
     , m_minPoints(minPoints)
     , m_kdtree(nullptr)
@@ -49,7 +51,7 @@ template <int POINT_DIMENSION, typename POINT_TYPE, typename VEC_POINT_TYPE>
 std::vector<std::vector<int>>
 DBSCAN<POINT_DIMENSION, POINT_TYPE, VEC_POINT_TYPE>::estimateClusterIndices(const VecPointType& points)
 {
-    m_kdtree = std::make_shared<KDTree<POINT_DIMENSION, POINT_TYPE, VEC_POINT_TYPE>>(points, m_distFunc);
+    m_kdtree = std::make_shared<KDTree<POINT_DIMENSION, POINT_TYPE, VEC_POINT_TYPE>>(points, m_distFunc, m_valueAtFunc);
 
     std::vector<std::vector<int>> clusterIndices;
     std::vector<char> visited(points.size(), false);

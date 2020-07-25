@@ -31,13 +31,16 @@ template <int POINT_DIMENSION, typename POINT_TYPE, typename VEC_POINT_TYPE = st
 
     using Ptr = std::shared_ptr<KDTree>;
 
+    using ValueAtFunctionType = const std::function<double(const POINT_TYPE& p, const int axis)>;
+    using DistanceFunctionType = std::function<double(const PointType& p1, const PointType& p2, ValueAtFunctionType)>;
+
  protected:
     struct KDNode;
 
  public:
     explicit KDTree(const VecPointType& points,
-                    const std::function<double(const PointType& p1, const PointType& p2)>& distFunc =
-                        clustering::distance<POINT_DIMENSION, POINT_TYPE>);
+                    const DistanceFunctionType& distFunc = clustering::distance<POINT_DIMENSION, POINT_TYPE>,
+                    const ValueAtFunctionType& valueAtFunc = clustering::at<POINT_DIMENSION, POINT_TYPE>);
     virtual ~KDTree();
 
     virtual int nearestSearch(const PointType& queryPoint) const;
@@ -71,7 +74,8 @@ template <int POINT_DIMENSION, typename POINT_TYPE, typename VEC_POINT_TYPE = st
 
  public:
     const int m_pointDimension = POINT_DIMENSION;
-    const std::function<double(const PointType& p1, const PointType& p2)> m_distFunc;
+    const ValueAtFunctionType m_valueAtFunc;
+    const DistanceFunctionType m_distFunc;
 
  protected:
     KDNode* m_root;

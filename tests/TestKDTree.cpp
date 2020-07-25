@@ -64,15 +64,24 @@ TEST(TestKDTree, TestInitialization)
     }
 
     {
-        const auto distFunc = [](const ::KDTree::PointType& p1, const ::KDTree::PointType& p2) {
+        ::KDTree::ValueAtFunctionType valueAtFunc = [](const ::KDTree::PointType& p, const int axis) {
+            if (axis >= 3) {
+                throw std::runtime_error("axis out of range\n");
+            }
+
+            return p[axis];
+        };
+
+        const auto distFunc = [](const ::KDTree::PointType& p1, const ::KDTree::PointType& p2,
+                                 const ::KDTree::ValueAtFunctionType& valueAtFunc) {
             double result = 0.0;
             for (int i = 0; i < 3; ++i) {
-                result += std::fabs(p1[i] - p2[i]);
+                result += std::fabs(valueAtFunc(p1, i) - valueAtFunc(p2, i));
             }
             return std::sqrt(result);
         };
 
-        ASSERT_NO_THROW(::KDTree kdTree(points, distFunc););
+        ASSERT_NO_THROW(::KDTree kdTree(points, distFunc, valueAtFunc););
     }
 }
 
@@ -99,7 +108,7 @@ TEST(TestKDTree, TestNearestSearch)
         double bruteForcedMinDist = std::numeric_limits<double>::max();
         for (int i = 0; i < numPoints; ++i) {
             const auto& curPoint = points[i];
-            const double curDist = kdTree.m_distFunc(queryPoint, curPoint);
+            const double curDist = kdTree.m_distFunc(queryPoint, curPoint, kdTree.m_valueAtFunc);
             if (curDist < bruteForcedMinDist) {
                 bruteForcedNearestIdx = i;
                 bruteForcedMinDist = curDist;
@@ -133,7 +142,7 @@ TEST(TestKDTree, TestRadiusSearch)
         std::vector<int> bruteForcedIndices;
         for (int i = 0; i < numPoints; ++i) {
             const auto& curPoint = points[i];
-            const double curDist = kdTree.m_distFunc(queryPoint, curPoint);
+            const double curDist = kdTree.m_distFunc(queryPoint, curPoint, kdTree.m_valueAtFunc);
             if (curDist < radius) {
                 bruteForcedIndices.emplace_back(i);
             }
@@ -174,7 +183,8 @@ TEST(TestKDTree, TestKNNSearch)
         std::vector<int> allIndices(numPoints);
         std::iota(allIndices.begin(), allIndices.end(), 0);
         std::sort(allIndices.begin(), allIndices.end(), [&](const int idx1, const int idx2) {
-            return kdTree.m_distFunc(queryPoint, points[idx1]) < kdTree.m_distFunc(queryPoint, points[idx2]);
+            return kdTree.m_distFunc(queryPoint, points[idx1], kdTree.m_valueAtFunc) <
+                   kdTree.m_distFunc(queryPoint, points[idx2], kdTree.m_valueAtFunc);
         });
 
         std::vector<int> bruteForcedIndices(allIndices.begin(), allIndices.begin() + k);

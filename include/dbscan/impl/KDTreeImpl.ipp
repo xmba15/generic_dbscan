@@ -10,9 +10,11 @@
 namespace clustering
 {
 template <int POINT_DIMENSION, typename POINT_TYPE, typename VEC_POINT_TYPE>
-KDTree<POINT_DIMENSION, POINT_TYPE, VEC_POINT_TYPE>::KDTree(
-    const VecPointType& points, const std::function<double(const PointType& p1, const PointType& p2)>& distFunc)
+KDTree<POINT_DIMENSION, POINT_TYPE, VEC_POINT_TYPE>::KDTree(const VecPointType& points,
+                                                            const DistanceFunctionType& distFunc,
+                                                            const ValueAtFunctionType& valueAtFunc)
     : m_points(points)
+    , m_valueAtFunc(valueAtFunc)
     , m_distFunc(distFunc)
 {
     this->buildKDTree();
@@ -82,7 +84,8 @@ std::vector<int> KDTree<POINT_DIMENSION, POINT_TYPE, VEC_POINT_TYPE>::knnSearch(
         indices.resize(m_points.size());
         std::iota(indices.begin(), indices.end(), 0);
         std::sort(indices.begin(), indices.end(), [&queryPoint, this](const int idx1, const int idx2) {
-            return m_distFunc(queryPoint, m_points[idx1]) < m_distFunc(queryPoint, m_points[idx2]);
+            return m_distFunc(queryPoint, m_points[idx1], m_valueAtFunc) <
+                   m_distFunc(queryPoint, m_points[idx2], m_valueAtFunc);
         });
 
         return indices;
@@ -111,9 +114,10 @@ KDTree<POINT_DIMENSION, POINT_TYPE, VEC_POINT_TYPE>::insertRec(std::vector<int>&
 
     const int medianIdx = pointIndices.size() / 2;
     const int splitType = depth % m_pointDimension;
-    std::nth_element(
-        pointIndices.begin(), pointIndices.begin() + medianIdx, pointIndices.end(),
-        [&](const int lhs, const int rhs) { return (m_points[lhs][splitType] < m_points[rhs][splitType]); });
+    std::nth_element(pointIndices.begin(), pointIndices.begin() + medianIdx, pointIndices.end(),
+                     [&](const int lhs, const int rhs) {
+                         return (m_valueAtFunc(m_points[lhs], splitType) < m_valueAtFunc(m_points[rhs], splitType));
+                     });
 
     KDNode* curNode = new KDNode();
     curNode->pointIdx = pointIndices[medianIdx];
@@ -155,17 +159,18 @@ void KDTree<POINT_DIMENSION, POINT_TYPE, VEC_POINT_TYPE>::nearestSearchRec(const
     }
 
     const PointType& curPoint = m_points[node->pointIdx];
-    const double curDist = m_distFunc(queryPoint, curPoint);
+    const double curDist = m_distFunc(queryPoint, curPoint, m_valueAtFunc);
     if (curDist < nearestDist) {
         nearestPointIdx = node->pointIdx;
         nearestDist = curDist;
     }
 
     const int splitType = node->splitType;
-    const int searchDirection = queryPoint[splitType] < curPoint[splitType] ? 0 : 1;
+    const int searchDirection = m_valueAtFunc(queryPoint, splitType) < m_valueAtFunc(curPoint, splitType) ? 0 : 1;
     this->nearestSearchRec(queryPoint, node->child[searchDirection], nearestPointIdx, nearestDist);
 
-    const double distToTheRemainingPlane = std::fabs(queryPoint[splitType] - curPoint[splitType]);
+    const double distToTheRemainingPlane =
+        std::fabs(m_valueAtFunc(queryPoint, splitType) - m_valueAtFunc(curPoint, splitType));
     if (distToTheRemainingPlane < nearestDist) {
         this->nearestSearchRec(queryPoint, node->child[!searchDirection], nearestPointIdx, nearestDist);
     }
@@ -181,16 +186,17 @@ void KDTree<POINT_DIMENSION, POINT_TYPE, VEC_POINT_TYPE>::radiusSearchRec(const 
     }
 
     const PointType& curPoint = m_points[node->pointIdx];
-    const double curDist = m_distFunc(queryPoint, curPoint);
+    const double curDist = m_distFunc(queryPoint, curPoint, m_valueAtFunc);
     if (curDist < radius) {
         indices.emplace_back(node->pointIdx);
     }
 
     const int splitType = node->splitType;
-    const int searchDirection = queryPoint[splitType] < curPoint[splitType] ? 0 : 1;
+    const int searchDirection = m_valueAtFunc(queryPoint, splitType) < m_valueAtFunc(curPoint, splitType) ? 0 : 1;
     this->radiusSearchRec(queryPoint, node->child[searchDirection], indices, radius);
 
-    const double distToTheRemainingPlane = std::fabs(queryPoint[splitType] - curPoint[splitType]);
+    const double distToTheRemainingPlane =
+        std::fabs(m_valueAtFunc(queryPoint, splitType) - m_valueAtFunc(curPoint, splitType));
     if (distToTheRemainingPlane < radius) {
         this->radiusSearchRec(queryPoint, node->child[!searchDirection], indices, radius);
     }
@@ -210,7 +216,7 @@ void KDTree<POINT_DIMENSION, POINT_TYPE, VEC_POINT_TYPE>::knnSearchRec(const Poi
     }
 
     const PointType& curPoint = m_points[node->pointIdx];
-    const double curDist = m_distFunc(queryPoint, curPoint);
+    const double curDist = m_distFunc(queryPoint, curPoint, m_valueAtFunc);
 
     if (curDist < maxDistance) {
         while (knnMaxHeap.size() >= k) {
@@ -221,10 +227,11 @@ void KDTree<POINT_DIMENSION, POINT_TYPE, VEC_POINT_TYPE>::knnSearchRec(const Poi
     }
 
     const int splitType = node->splitType;
-    const int searchDirection = queryPoint[splitType] < curPoint[splitType] ? 0 : 1;
+    const int searchDirection = m_valueAtFunc(queryPoint, splitType) < m_valueAtFunc(curPoint, splitType) ? 0 : 1;
     this->knnSearchRec(queryPoint, node->child[searchDirection], knnMaxHeap, maxDistance, k);
 
-    const double distToTheRemainingPlane = std::fabs(queryPoint[splitType] - curPoint[splitType]);
+    const double distToTheRemainingPlane =
+        std::fabs(m_valueAtFunc(queryPoint, splitType) - m_valueAtFunc(curPoint, splitType));
     if (knnMaxHeap.size() < k || distToTheRemainingPlane < maxDistance) {
         this->knnSearchRec(queryPoint, node->child[!searchDirection], knnMaxHeap, maxDistance, k);
     }
