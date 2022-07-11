@@ -1,3 +1,5 @@
+[![.github/workflows/build.yml](https://github.com/xmba15/generic_dbscan/actions/workflows/build.yml/badge.svg)](https://github.com/xmba15/generic_dbscan/actions/workflows/build.yml)
+
 # 📝 c++ generic DBSCAN #
 ***
 
@@ -83,6 +85,16 @@ make gpu_apps -j`nproc`
 - Here is the sample result:
 
 ![clustered_results](./docs/images/clustered_results.png)
+
+### :whale: How to Run with Docker ###
+
+```bash
+# build
+docker build -f ./dockerfiles/ubuntu2004.dockerfile -t dbscan .
+
+# run
+docker run -it --rm -v `pwd`:/workspace dbscan
+```
 
 ## :gem: References ##
 ***

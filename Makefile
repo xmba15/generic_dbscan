@@ -25,4 +25,4 @@ unittest:
 	@cd build && make test
 
 clean:
-	@rm -rf build
+	@rm -rf build*

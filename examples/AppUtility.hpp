@@ -9,6 +9,8 @@
 
 #include <pcl/io/pcd_io.h>
 #include <pcl/visualization/pcl_visualizer.h>
+#include <utility>
+#include <vector>
 
 namespace
 {

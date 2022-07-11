@@ -17,7 +17,7 @@
 #include <utility>
 #include <vector>
 
-#include "Utility.hpp"
+#include <dbscan/Utility.hpp>
 
 namespace clustering
 {
@@ -43,6 +43,16 @@ template <int POINT_DIMENSION, typename POINT_TYPE, typename VEC_POINT_TYPE = st
     std::vector<int> radiusSearch(const PointType& queryPoint, const double radius) const;
 
     std::vector<int> knnSearch(const PointType& queryPoint, const int k) const;
+
+    auto valueAtFunc() const
+    {
+        return m_valueAtFunc;
+    }
+
+    auto distFunc() const
+    {
+        return m_distFunc;
+    }
 
  private:
     void buildKDTree();
