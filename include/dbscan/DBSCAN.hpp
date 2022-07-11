@@ -14,8 +14,8 @@
 #include <memory>
 #include <vector>
 
-#include "KDTree.hpp"
-#include "Utility.hpp"
+#include <dbscan/KDTree.hpp>
+#include <dbscan/Utility.hpp>
 
 namespace clustering
 {

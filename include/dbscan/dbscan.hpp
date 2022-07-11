@@ -7,6 +7,6 @@
 
 #pragma once
 
-#include "DBSCAN.hpp"
-#include "KDTree.hpp"
-#include "Utility.hpp"
+#include <dbscan/DBSCAN.hpp>
+#include <dbscan/KDTree.hpp>
+#include <dbscan/Utility.hpp>

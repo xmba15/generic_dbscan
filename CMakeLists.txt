@@ -28,16 +28,16 @@ target_compile_options(dbscan
 # ------------------------------------------------
 # gpu library
 # ------------------------------------------------
-include(CheckLanguage)
-check_language(CUDA)
-if (CMAKE_CUDA_COMPILER)
-  if (USE_GPU)
+if(USE_GPU)
+  include(CheckLanguage)
+  check_language(CUDA)
+  if (CMAKE_CUDA_COMPILER)
     enable_language(CUDA)
     add_subdirectory(cuda)
+  else()
+    message(STATUS "CUDA not found")
+    return()
   endif()
-else()
-  message(STATUS "CUDA not found")
-  return()
 endif()
 
 if(BUILD_EXAMPLES)

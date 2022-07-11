@@ -1,0 +1,42 @@
+name: Build
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  test-production:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup python
+        uses: actions/setup-python@v4
+        with:
+           python-version: '3.x'
+
+      - name: Apply cpplint
+        run: |
+          pip install cpplint
+          find ./ -iname *.hpp -o -iname *.cpp | xargs cpplint
+      - name: Apply clang-format
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends clang-format
+          find ./ -iname *.hpp -o -iname *.cpp | xargs clang-format -n --verbose --Werror
+      - name: Setup environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends software-properties-common build-essential cmake git
+          chmod +x scripts/install_dependencies.bash && bash scripts/install_dependencies.bash
+      - name: Run tests
+        run: |
+          make unittest
+
+      - name: Run apps
+        run: |
+          make apps -j`nproc`
+          ./build/examples/test_pointcloud_clustering ./data/street_no_ground.pcd 0.7 3 0
