@@ -66,10 +66,12 @@ make gpu_apps -j`nproc`
 # eps and min points are parameters of dbscan algorithm
 
 # for example
-./build/examples/test_pointcloud_clustering ./data/street_no_ground.pcd 0.7 3
+./build/examples/test_pointcloud_clustering ./data/street_no_ground.pcd 0.7 3 1
 
 # or
-./build/examples/test_pointcloud_clustering_gpu ./data/street_no_ground.pcd 0.7 3
+./build/examples/test_pointcloud_clustering_gpu ./data/street_no_ground.pcd 0.7 3 1
+
+# change final parameters to 0 to disable visualization
 ```
 
 - processing time (average of 10 tests):
@@ -88,12 +90,24 @@ make gpu_apps -j`nproc`
 
 ### :whale: How to Run with Docker ###
 
+- cpu
+
 ```bash
 # build
-docker build -f ./dockerfiles/ubuntu2004.dockerfile -t dbscan .
+docker build -f ./dockerfiles/ubuntu2004_gpu.dockerfile -t dbscan .
 
 # run
 docker run -it --rm -v `pwd`:/workspace dbscan
+```
+
+- gpu: change [the cuda version here](https://github.com/xmba15/generic_dbscan/blob/master/dockerfiles/ubuntu2004_gpu.dockerfile#L1) to match your local cuda version before build.
+
+```bash
+# build
+docker build -f ./dockerfiles/ubuntu2004_gpu.dockerfile -t dbscan_gpu .
+
+# run
+docker run -it --rm --gpus all -v `pwd`:/workspace dbscan_gpu
 ```
 
 ## :gem: References ##

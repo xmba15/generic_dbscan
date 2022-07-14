@@ -20,21 +20,21 @@ using PointCloud = pcl::PointCloud<PointCloudType>;
 using PointCloudPtr = PointCloud::Ptr;
 using DBSCAN = clustering::cuda::DBSCAN<PointCloudType>;
 
-auto pclViewer = initializeViewer();
 auto timer = pcl::StopWatch();
 int NUM_TEST = 10;
 }  // namespace
 
 int main(int argc, char* argv[])
 {
-    if (argc != 4) {
-        std::cerr << "Usage: [app] [path/to/pcl/file] [eps] [min/points]\n";
+    if (argc < 4) {
+        std::cerr << "Usage: [app] [path/to/pcl/file] [eps] [min/points] [to/visualize/0:no/1:yes]\n";
         return EXIT_FAILURE;
     }
 
     const std::string pclFilePath = argv[1];
     const double eps = std::atof(argv[2]);
     const int minPoints = std::atoi(argv[3]);
+    bool toVisualize = argc == 5 ? std::atoi(argv[4]) : true;
 
     PointCloudPtr inCloud(new PointCloud);
     if (pcl::io::loadPCDFile(pclFilePath, *inCloud) == -1) {
@@ -57,11 +57,16 @@ int main(int argc, char* argv[])
     std::cout << "number of clusters: " << clusterIndices.size() << "\n";
     std::cout << "processing time (gpu): " << timer.getTime() / NUM_TEST << "[ms]\n";
 
+    if (!toVisualize) {
+        return EXIT_SUCCESS;
+    }
+
     std::vector<PointCloudPtr> clusters = ::toClusters<PointCloudType>(clusterIndices, inCloud);
 
     auto [colors, colorHandlers] = ::initPclColorHandlers<PointCloudType>(clusters);
 
     std::size_t countElem = 0;
+    auto pclViewer = initializeViewer();
     for (const auto& cluster : clusters) {
         pclViewer->addPointCloud<PointCloudType>(cluster, colorHandlers[countElem], std::to_string(countElem));
         pclViewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3,
