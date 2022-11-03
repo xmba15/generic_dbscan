@@ -20,7 +20,7 @@ cudaError_t warmUpGPU();
 }  // namespace utils
 }  // namespace cuda
 
-static void HandleError(cudaError_t err, const char* file, int line)
+inline void HandleError(cudaError_t err, const char* file, int line)
 {
     if (err != cudaSuccess) {
         printf("%s in %s at line %d\n", cudaGetErrorString(err), file, line);
